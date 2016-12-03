@@ -36,7 +36,7 @@ I have checked the training data set by using summary method and I have found a 
 
 ## Cleaning Strategy
 
-```{r}
+```{r, cache=TRUE}
 ratioMissing <- function(x){sum(is.na(x))/length(x)*100}
 ratioTraining <- apply(training,2,ratioMissing)
 ratioTesting <- apply(testing,2,ratioMissing)
@@ -46,14 +46,14 @@ I have created a function which basically can show us the ratio of missing value
      
 I don't think we can impute these columns as the missing ratios are really high. We have two options, either make them zero or exclude them. I have decided to exclude them by comparing with the ratio I have got and we will do the same for the testing set.
 
-```{r}
+```{r, cache=TRUE}
 newTraining <- training[, ratioTraining < 90]
 newTesting <- testing[, ratioTesting < 90]
 ```
 
 I did try using X, username and timestamp variables to train models before but it didn't work and turned out my final model was too biased. So I have to remove those variables.
 
-```{r}
+```{r, cache=TRUE}
 newTraining <- subset(newTraining, select=-c(1:7))
 newTesting <- subset(newTesting, select=-c(1:7))
 
@@ -71,7 +71,7 @@ validation <- newTraining[-inTrain,]
 
 I am writing R code in Windows and my laptop is quite old. Instead a default CPU processing I will use parallel technique to boost up the speed by using doParallel package.
 
-```{r}
+```{r, cache=TRUE}
 registerDoParallel(makeCluster(4))
 ```
 
@@ -92,7 +92,6 @@ The accuracy for each model:
            
 ### nb
 
-![Figure 1](C:\Users\Oattie\Documents\Coursera\ML4\ML_Assignment\nb_confusionMatrix.png)
 ```{r, cache=TRUE}
 confusionMatrix(predict(model1, newdata=finalTraining), finalTraining$classe)
 ```
