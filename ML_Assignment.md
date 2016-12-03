@@ -1,0 +1,148 @@
+---
+title: "Machine Learning Assignment"
+author: "Apichart Thanomkiet"
+date: "November 24, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Synopsis
+
+We will have two datasets of the usage of personal devices for example Jowbone, fitbit and NiekFuelBand-- one for training and another one is for testing. 
+     
+Please ignore the warning: Warning in FUN(X[[i]], ...) proceduce by building Naive Bayes model. I really want to know why I have got these warnings. I appreciate If you can give me a feedback.  
+
+## Load data
+```{r, cache=TRUE}
+library(caret)
+
+library(RCurl)
+library(doParallel)
+file <- getURL("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+training <- read.csv(text=file, header = T, sep=",", na.strings=c("#DIV/0!", "", "NA"))
+
+file <- getURL("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+
+testing <- read.csv(text=file, header = T, sep = ",", na.strings=c("#DIV/0!", "", "NA"),stringsAsFactors = F)
+
+```
+
+## Peaking into the dataset
+
+I have checked the training data set by using summary method and I have found a lot of missing values. Also a weird notation like #DIV/0! which I have no idea what it is. For #DIV/0!, I have decided to convert it to NA value by using na.strings when reading csv file for both training and test dataset.
+
+## Cleaning Strategy
+
+```{r}
+ratioMissing <- function(x){sum(is.na(x))/length(x)*100}
+ratioTraining <- apply(training,2,ratioMissing)
+ratioTesting <- apply(testing,2,ratioMissing)
+```
+
+I have created a function which basically can show us the ratio of missing values in each variable and the result doesn't look good-- I meant, there are too many missing values, approximately 98 - 100%.   
+     
+I don't think we can impute these columns as the missing ratios are really high. We have two options, either make them zero or exclude them. I have decided to exclude them by comparing with the ratio I have got and we will do the same for the testing set.
+
+```{r}
+newTraining <- training[, ratioTraining < 90]
+newTesting <- testing[, ratioTesting < 90]
+```
+
+I did try using X, username and timestamp variables to train models before but it didn't work and turned out my final model was too biased. So I have to remove those variables.
+
+```{r}
+newTraining <- subset(newTraining, select=-c(1:7))
+newTesting <- subset(newTesting, select=-c(1:7))
+
+```
+Then I separate the training set into training set and validation set.
+
+```{r, cache=TRUE}
+set.seed(7812)
+inTrain <- createDataPartition(y=newTraining$classe, p = 0.7,list=FALSE)
+finalTraining <- newTraining[inTrain,]
+validation <- newTraining[-inTrain,]
+```
+
+## Parallel setting
+
+I am writing R code in Windows and my laptop is quite old. Instead a default CPU processing I will use parallel technique to boost up the speed by using doParallel package.
+
+```{r}
+registerDoParallel(makeCluster(4))
+```
+
+## Choosing Model
+
+From the list [HERE](https://topepo.github.io/caret/available-models.html), also our outcome is 5 classesr, and among the famous models in the lecture, I would like to see how good amid NaiveBayes(nb), Recursive Paritioning and Regression Tree(rpart) and Random Forest(rf) are. Actually I wanted to include gbm but I have tried several times and my computer crashed while running gbm. We first compare the models using default resampling which is boottrap without preprocessing.
+
+```{r,cache=TRUE}
+set.seed(1235)
+model1 <- train(classe ~ ., data=finalTraining, method="nb")
+set.seed(1235)
+model2 <- train(classe ~ ., data=finalTraining, method="rpart")
+set.seed(1235)
+model3 <- train(classe ~ ., data=finalTraining, method="rf")
+```
+
+The accuracy for each model: 
+           
+### nb
+
+![Figure 1](C:\Users\Oattie\Documents\Coursera\ML4\ML_Assignment\nb_confusionMatrix.png)
+```{r, cache=TRUE}
+confusionMatrix(predict(model1, newdata=finalTraining), finalTraining$classe)
+```
+
+### rpart  
+```{r,cache=TRUE}
+confusionMatrix(predict(model2, newdata=finalTraining), finalTraining$classe)
+```
+
+### randomForest
+```{r, cache=TRUE}
+confusionMatrix(predict(model3, newdata=finalTraining), finalTraining$classe)
+```
+
+
+From this result, I will choose the Random Forest to me my final model as it has smallest in-sample error(1 - accuracy), to train the training data with repeated 10 k-folds cross-validation.
+
+```{r,cache=TRUE}
+# Setting the resampling technique in the traing control.
+train_Con <- trainControl(method="repeatedcv", number=10, repeats=5)
+
+# Train the data with the training control using rf method.
+set.seed(5632411)
+best.mod <-  train(classe ~ ., data=finalTraining, method="rf", trControl=train_Con)
+```
+
+Now we compare to the validation set to check how accurate the model is.
+
+```{r, cache=TRUE}
+confusionMatrix(predict(best.mod, newdata=validation), validation$classe)
+```
+
+The out error is around 1-0.9998 = 0.1% which is quite good. Lets see what variables that affect this accuracy.
+
+```{r, cache=TRUE}
+varImp(best.mod, scale = F)
+varImpPlot(best.mod$finalModel, type=2)
+```
+
+Now lets make a prediction with the 20 observation test set.
+
+```{r, cache=TRUE}
+pre.test <- predict(best.mod, newdata=newTesting)
+pre.test
+```
+
+## Summary
+
+After trying three different models, rpart is the fastest model that I have tried but for the accuracy, Random Forest is at the first place, then nb and rpart respectively.  
+
+For the final model, rf, The in-sample error is optimistically less than out-sample error.
+
+I didn't use any preprocess techniques because I was building a classification model where transforming data is not required. 
