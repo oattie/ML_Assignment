@@ -2,7 +2,9 @@
 title: "Machine Learning Assignment"
 author: "Apichart Thanomkiet"
 date: "November 24, 2016"
-output: html_document
+output: 
+  md_document:
+    variant: markdown_github
 ---
 
 ```{r setup, include=FALSE}
@@ -13,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 We will have two datasets of the usage of personal devices for example Jowbone, fitbit and NiekFuelBand-- one for training and another one is for testing. 
      
-Please ignore the warning: Warning in FUN(X[[i]], ...) proceduce by building Naive Bayes model. I really want to know why I have got these warnings. I appreciate If you can give me a feedback.  
+Please ignore the warning: Warning in FUN(X[[i]], ...) proceduce by building prediction for the Naive Bayes model. I really want to know why I have got these warnings. I appreciate If you can give me a feedback.  
 
 ## Load data
 ```{r, cache=TRUE}
