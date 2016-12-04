@@ -126,7 +126,7 @@ Now we compare to the validation set to check how accurate the model is.
 confusionMatrix(predict(best.mod, newdata=validation), validation$classe)
 ```
 
-The out error is around 1-0.9998 = 0.1% which is quite good. Lets see what variables that affect this accuracy.
+The out-sample error is around 1-0.9998 = 0.1% which is quite good. Lets see what variables that affect this accuracy.
 
 ```{r, cache=TRUE}
 varImp(best.mod, scale = F)

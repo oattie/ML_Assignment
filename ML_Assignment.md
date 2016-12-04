@@ -320,7 +320,7 @@ confusionMatrix(predict(best.mod, newdata=validation), validation$classe)
     ## Detection Prevalence   0.2856   0.1951   0.1742   0.1619   0.1832
     ## Balanced Accuracy      0.9992   0.9947   0.9901   0.9924   0.9982
 
-The out error is around 1-0.9998 = 0.1% which is quite good. Lets see what variables that affect this accuracy.
+The out-sample error is around 1-0.9998 = 0.1% which is quite good. Lets see what variables that affect this accuracy.
 
 ``` r
 varImp(best.mod, scale = F)
